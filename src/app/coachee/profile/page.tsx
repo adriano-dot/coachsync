@@ -82,7 +82,7 @@ export default function CoacheeProfilePage() {
             </div>
             <div>
               <label className="label">CPF</label>
-              <input type="text" className="input" value={profile.cpf ?? ''} disabled className="input bg-cream-50 text-charcoal-400 cursor-not-allowed" />
+              <input type="text" className="input bg-cream-50 text-charcoal-400 cursor-not-allowed" value={profile.cpf ?? ''} disabled />
             </div>
           </div>
           <div>
