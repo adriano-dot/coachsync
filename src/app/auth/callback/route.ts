@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/'
 
   if (!code) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
@@ -32,11 +33,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login?error=confirmation_failed', request.url))
   }
 
-  const { data: profile } = await supabase
+  // Redirect based on role
+  let { data: profile } = await supabase
     .from('profiles')
     .select('role, onboarding_step')
     .eq('id', data.user.id)
     .single()
+
+  // Create profile if it doesn't exist (first login after email confirmation)
+  if (!profile) {
+    const meta = data.user.user_metadata
+    const newProfile = {
+      id: data.user.id,
+      full_name: meta?.full_name || '',
+      role: (meta?.role as string) || 'coachee',
+      onboarding_step: 'profile',
+    }
+    await supabase.from('profiles').insert(newProfile)
+    profile = { role: newProfile.role, onboarding_step: newProfile.onboarding_step } as typeof profile
+  }
+
+  if (next !== '/') {
+    return NextResponse.redirect(new URL(next, request.url))
+  }
 
   if (profile?.role === 'coach') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
