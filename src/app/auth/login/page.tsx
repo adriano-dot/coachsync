@@ -22,7 +22,11 @@ export default function LoginPage() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      toast.error('Email ou senha incorretos')
+      if (error.message.toLowerCase().includes('email not confirmed') || error.code === 'email_not_confirmed') {
+        toast.error('Confirme seu email antes de entrar. Verifique sua caixa de entrada.')
+      } else {
+        toast.error('Email ou senha incorretos')
+      }
       setLoading(false)
       return
     }
