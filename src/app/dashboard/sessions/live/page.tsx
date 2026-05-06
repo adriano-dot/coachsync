@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
@@ -37,6 +37,14 @@ function formatTime(seconds: number) {
 
 // ─── Live Session Component ──────────────────────────────────────
 export default function LiveSessionPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen bg-charcoal-900 items-center justify-center text-white/40 text-sm">Carregando sessão...</div>}>
+      <LiveSessionInner />
+    </Suspense>
+  )
+}
+
+function LiveSessionInner() {
   const router = useRouter()
   const params = useSearchParams()
   const supabase = createClient()
