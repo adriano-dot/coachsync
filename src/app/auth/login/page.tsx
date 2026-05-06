@@ -19,34 +19,43 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (error) {
-      if (error.message.toLowerCase().includes('email not confirmed') || error.code === 'email_not_confirmed') {
-        toast.error('Confirme seu email antes de entrar. Verifique sua caixa de entrada.')
-      } else {
-        toast.error('Email ou senha incorretos')
+      if (error) {
+        const msg = error.message.toLowerCase()
+        if (msg.includes('email not confirmed') || msg.includes('not_confirmed') || error.code === 'email_not_confirmed') {
+          toast.error('Confirme seu email antes de entrar. Verifique sua caixa de entrada.')
+        } else if (msg.includes('invalid') || msg.includes('wrong') || msg.includes('invalid login')) {
+          toast.error('Email ou senha incorretos')
+        } else {
+          toast.error(error.message)
+        }
+        setLoading(false)
+        return
       }
+
+      // Get profile to determine redirect
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, onboarding_step')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profile?.role === 'coach') {
+        router.push('/dashboard')
+      } else {
+        const step = profile?.onboarding_step
+        if (step && step !== 'completed') {
+          router.push(`/coachee/onboarding/${step}`)
+        } else {
+          router.push('/coachee/dashboard')
+        }
+      }
+    } catch (err) {
+      console.error('Login error:', err)
+      toast.error('Erro inesperado. Tente novamente.')
       setLoading(false)
-      return
-    }
-
-    // Get profile to determine redirect
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role, onboarding_step')
-      .eq('id', data.user.id)
-      .single()
-
-    if (profile?.role === 'coach') {
-      router.push('/dashboard')
-    } else {
-      const step = profile?.onboarding_step
-      if (step && step !== 'completed') {
-        router.push(`/coachee/onboarding/${step}`)
-      } else {
-        router.push('/coachee/dashboard')
-      }
     }
   }
 
