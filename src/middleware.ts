@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
       getAll() {
         return request.cookies.getAll()
       },
-            setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+      setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
         supabaseResponse = NextResponse.next({ request })
         cookiesToSet.forEach(({ name, value, options }) =>
@@ -39,8 +39,11 @@ export async function middleware(request: NextRequest) {
         .eq('id', user.id)
         .single()
 
-      const redirectUrl = profile?.role === 'coach' ? '/dashboard' : '/coachee/dashboard'
-      return NextResponse.redirect(new URL(redirectUrl, request.url))
+      // Only redirect if profile exists with a valid role
+      if (profile?.role) {
+        const redirectUrl = profile.role === 'coach' ? '/dashboard' : '/coachee/dashboard'
+        return NextResponse.redirect(new URL(redirectUrl, request.url))
+      }
     }
     return supabaseResponse
   }
@@ -57,11 +60,14 @@ export async function middleware(request: NextRequest) {
     .eq('id', user.id)
     .single()
 
-  if (pathname.startsWith('/dashboard') && profile?.role !== 'coach') {
+  // Default to coachee if no profile exists (prevents redirect loop)
+  const role = profile?.role ?? 'coachee'
+
+  if (pathname.startsWith('/dashboard') && role !== 'coach') {
     return NextResponse.redirect(new URL('/coachee/dashboard', request.url))
   }
 
-  if (pathname.startsWith('/coachee') && profile?.role !== 'coachee') {
+  if (pathname.startsWith('/coachee') && role !== 'coachee') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
@@ -70,6 +76,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
