@@ -1,21 +1,46 @@
-import { createClient } from '@/lib/supabase/server'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { formatDateShort, getInitials } from '@/lib/utils'
 import { Plus, Sparkles, CalendarDays } from 'lucide-react'
 import Link from 'next/link'
 
-export default async function SessionsPage() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+export default function SessionsPage() {
+  const [loading, setLoading] = useState(true)
+  const [sessions, setSessions] = useState<any[]>([])
 
-  const { data: sessions } = await supabase
-    .from('sessions')
-    .select('*, coachee:coachee_id(full_name)')
-    .eq('coach_id', user.id)
-    .order('session_date', { ascending: false })
+  useEffect(() => {
+    async function fetchData() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-  const completed = sessions?.filter(s => s.status === 'completed') ?? []
-  const scheduled = sessions?.filter(s => s.status === 'scheduled') ?? []
+      const { data } = await supabase
+        .from('sessions')
+        .select('*, coachee:coachee_id(full_name)')
+        .eq('coach_id', user.id)
+        .order('session_date', { ascending: false })
+
+      setSessions(data ?? [])
+      setLoading(false)
+    }
+    fetchData()
+  }, [])
+
+  const completed = sessions.filter(s => s.status === 'completed')
+  const scheduled = sessions.filter(s => s.status === 'scheduled')
+
+  if (loading) {
+    return (
+      <div className="p-8 animate-pulse space-y-4">
+        <div className="h-8 bg-cream-100 rounded-xl w-32" />
+        <div className="space-y-2">
+          {[1,2,3].map(i => <div key={i} className="h-16 bg-cream-100 rounded-2xl" />)}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-8 animate-in">
@@ -44,7 +69,7 @@ export default async function SessionsPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-charcoal-800 truncate">{session.title}</p>
                   <p className="text-xs text-charcoal-400">
-                    {(session.coachee as any)?.full_name} · {formatDateShort(session.session_date)}
+                    {session.coachee?.full_name} · {formatDateShort(session.session_date)}
                     {session.duration_minutes && ` · ${session.duration_minutes}min`}
                   </p>
                 </div>
@@ -64,13 +89,13 @@ export default async function SessionsPage() {
                 className="card-hover flex items-center gap-4">
                 <div className="w-10 h-10 bg-sage-50 rounded-xl flex items-center justify-center flex-shrink-0">
                   <span className="text-sage-700 font-semibold text-sm">
-                    {getInitials((session.coachee as any)?.full_name ?? '?')}
+                    {getInitials(session.coachee?.full_name ?? '?')}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-charcoal-800 truncate">{session.title}</p>
                   <p className="text-xs text-charcoal-400">
-                    {(session.coachee as any)?.full_name} · {formatDateShort(session.session_date)}
+                    {session.coachee?.full_name} · {formatDateShort(session.session_date)}
                     {session.duration_minutes && ` · ${session.duration_minutes}min`}
                   </p>
                 </div>
