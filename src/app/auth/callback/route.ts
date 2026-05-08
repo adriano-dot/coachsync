@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       onboarding_step: 'profile',
     }
     await supabase.from('profiles').insert(newProfile)
-    profile = { role: newProfile.role, onboarding_step: newProfile.onboarding_step } as typeof profile
+    profile = { role: newProfile.role, onboarding_step: newProfile.onboarding_step }
   }
 
   if (next !== '/') {
