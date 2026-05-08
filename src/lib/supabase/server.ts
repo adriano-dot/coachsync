@@ -14,7 +14,7 @@ export function createClient() {
             try { return { name, value: decodeURIComponent(value) } } catch { return { name, value } }
           })
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
