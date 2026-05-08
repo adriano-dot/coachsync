@@ -1,26 +1,57 @@
-import { createClient } from '@/lib/supabase/server'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { formatDate, getInitials } from '@/lib/utils'
 import { Plus, Search, ChevronRight, User } from 'lucide-react'
 import Link from 'next/link'
 
-export default async function CoacheesPage() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+export default function CoacheesPage() {
+  const [loading, setLoading] = useState(true)
+  const [coachees, setCoachees] = useState<any[]>([])
+  const [search, setSearch] = useState('')
 
-  const { data: coachees } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('coach_id', user.id)
-    .eq('role', 'coachee')
-    .order('created_at', { ascending: false })
+  useEffect(() => {
+    async function fetchData() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('coach_id', user.id)
+        .eq('role', 'coachee')
+        .order('created_at', { ascending: false })
+
+      setCoachees(data ?? [])
+      setLoading(false)
+    }
+    fetchData()
+  }, [])
+
+  const filtered = coachees.filter(c =>
+    !search || c.full_name?.toLowerCase().includes(search.toLowerCase()) || c.email?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  if (loading) {
+    return (
+      <div className="p-8 animate-pulse space-y-4">
+        <div className="h-8 bg-cream-100 rounded-xl w-32" />
+        <div className="h-10 bg-cream-100 rounded-xl w-72" />
+        <div className="space-y-2">
+          {[1,2,3].map(i => <div key={i} className="h-20 bg-cream-100 rounded-2xl" />)}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-8 animate-in">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-display text-3xl font-semibold text-charcoal-800">Coachees</h1>
-          <p className="text-charcoal-500 text-sm mt-1">{coachees?.length ?? 0} clientes cadastrados</p>
+          <p className="text-charcoal-500 text-sm mt-1">{coachees.length} clientes cadastrados</p>
         </div>
         <Link href="/dashboard/coachees/new" className="btn-primary flex items-center gap-2">
           <Plus className="w-4 h-4" />
@@ -28,19 +59,20 @@ export default async function CoacheesPage() {
         </Link>
       </div>
 
-      {/* Search (UI only — implement with server actions or client component) */}
       <div className="relative mb-6">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
         <input
           type="text"
           placeholder="Buscar coachees..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
           className="input pl-10 max-w-sm"
         />
       </div>
 
-      {coachees && coachees.length > 0 ? (
+      {filtered.length > 0 ? (
         <div className="grid grid-cols-1 gap-3">
-          {coachees.map(coachee => (
+          {filtered.map(coachee => (
             <Link
               key={coachee.id}
               href={`/dashboard/coachees/${coachee.id}`}
@@ -80,15 +112,17 @@ export default async function CoacheesPage() {
             <User className="w-7 h-7 text-charcoal-400" />
           </div>
           <h3 className="font-display text-xl font-semibold text-charcoal-700 mb-2">
-            Nenhum coachee ainda
+            {search ? 'Nenhum resultado encontrado' : 'Nenhum coachee ainda'}
           </h3>
           <p className="text-charcoal-400 text-sm mb-6">
-            Cadastre seu primeiro coachee para começar
+            {search ? 'Tente outro termo de busca' : 'Cadastre seu primeiro coachee para começar'}
           </p>
-          <Link href="/dashboard/coachees/new" className="btn-primary inline-flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Cadastrar coachee
-          </Link>
+          {!search && (
+            <Link href="/dashboard/coachees/new" className="btn-primary inline-flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Cadastrar coachee
+            </Link>
+          )}
         </div>
       )}
     </div>
