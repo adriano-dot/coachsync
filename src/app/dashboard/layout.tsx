@@ -51,11 +51,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return pathname.startsWith(item.href)
   }
 
+  // Sessao ao vivo: tela cheia sem sidebar
+  if (pathname === '/dashboard/sessions/live') {
+    return <>{children}</>
+  }
+
   return (
     <div className="min-h-screen flex bg-cream-50">
-      {/* Sidebar */}
       <aside className="w-60 min-h-screen bg-white border-r border-cream-200 flex flex-col fixed left-0 top-0 z-30">
-        {/* Logo */}
         <div className="px-5 py-5 border-b border-cream-100">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 bg-sage-500 rounded-lg flex items-center justify-center">
@@ -65,7 +68,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {navItems.map(item => (
             <Link
@@ -79,7 +81,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
 
-        {/* Profile */}
         <div className="p-3 border-t border-cream-100">
           <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-cream-50 transition-colors">
             <div className="w-8 h-8 bg-sage-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -104,7 +105,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 ml-60 min-h-screen">
         {children}
       </main>
