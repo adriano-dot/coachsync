@@ -15,6 +15,8 @@ export default function CoacheeTasksPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'done'>('all')
 
   useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -24,8 +26,37 @@ export default function CoacheeTasksPage() {
         .eq('coachee_id', user.id)
         .order('created_at', { ascending: false })
       setTasks(data ?? [])
+
+      channel = supabase
+        .channel(`tasks-${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: 'DELETE', schema: 'public', table: 'tasks', filter: `coachee_id=eq.${user.id}` },
+          (payload) => {
+            setTasks(prev => prev.filter(t => t.id !== payload.old.id))
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'tasks', filter: `coachee_id=eq.${user.id}` },
+          (payload) => {
+            setTasks(prev => [payload.new as Task, ...prev])
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'tasks', filter: `coachee_id=eq.${user.id}` },
+          (payload) => {
+            setTasks(prev => prev.map(t => t.id === payload.new.id ? (payload.new as Task) : t))
+          }
+        )
+        .subscribe()
     }
     load()
+
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [])
 
   async function updateStatus(taskId: string, status: Task['status']) {

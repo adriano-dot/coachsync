@@ -3,14 +3,20 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate, formatDateShort, getInitials, taskStatusColor, taskStatusLabel, wheelOfLifeLabels } from '@/lib/utils'
-import { ArrowLeft, User, Mail, Phone, Target, CalendarDays, CheckSquare, Plus } from 'lucide-react'
+import { ArrowLeft, User, Mail, Phone, Target, CalendarDays, CheckSquare, Plus, Copy, Trash2 } from 'lucide-react'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
+
+function normalizeTitle(title: string) {
+  return title.trim().toLowerCase().replace(/\s+/g, ' ')
+}
 
 export default function CoacheeDetailPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const [coachee, setCoachee] = useState<any>(null)
   const [sessions, setSessions] = useState<any[]>([])
   const [tasks, setTasks] = useState<any[]>([])
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchData() {
@@ -24,9 +30,44 @@ export default function CoacheeDetailPage({ params }: { params: { id: string } }
       setSessions(sessionsData ?? [])
       setTasks(tasksData ?? [])
       setLoading(false)
+
+      const duplicateCount = countDuplicates(tasksData ?? [])
+      if (duplicateCount > 0) {
+        toast.error(
+          `${duplicateCount} tarefa${duplicateCount > 1 ? 's' : ''} duplicada${duplicateCount > 1 ? 's' : ''} detectada${duplicateCount > 1 ? 's' : ''} para ${coacheeData?.full_name ?? 'este coachee'}`,
+          { duration: 6000 }
+        )
+      }
     }
     fetchData()
   }, [params.id])
+
+  function countDuplicates(list: any[]) {
+    const seen = new Map<string, number>()
+    for (const t of list) {
+      const key = normalizeTitle(t.title)
+      seen.set(key, (seen.get(key) ?? 0) + 1)
+    }
+    let count = 0
+    Array.from(seen.values()).forEach(n => { if (n > 1) count += n })
+    return count
+  }
+
+  async function handleDelete(taskId: string) {
+    if (!confirm('Apagar esta tarefa? Ela vai sumir imediatamente da tela do coachee.')) return
+    setDeletingId(taskId)
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao apagar')
+      setTasks(prev => prev.filter(t => t.id !== taskId))
+      toast.success('Tarefa apagada')
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao apagar tarefa')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -125,13 +166,30 @@ export default function CoacheeDetailPage({ params }: { params: { id: string } }
             )}
             {tasks.length > 0 ? (
               <div className="space-y-2">
-                {tasks.slice(0, 6).map(task => (
-                  <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-xl">
-                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${task.status === 'done' ? 'bg-sage-400' : task.status === 'in_progress' ? 'bg-blue-400' : 'bg-amber-400'}`} />
-                    <p className={`flex-1 text-sm ${task.status === 'done' ? 'text-charcoal-400 line-through' : 'text-charcoal-700'}`}>{task.title}</p>
-                    <span className={`badge text-xs ${taskStatusColor(task.status)}`}>{taskStatusLabel(task.status)}</span>
-                  </div>
-                ))}
+                {tasks.map(task => {
+                  const titleKey = normalizeTitle(task.title)
+                  const isDuplicate = tasks.filter(t => normalizeTitle(t.title) === titleKey).length > 1
+                  return (
+                    <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-cream-50 transition-colors">
+                      <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${task.status === 'done' ? 'bg-sage-400' : task.status === 'in_progress' ? 'bg-blue-400' : 'bg-amber-400'}`} />
+                      <p className={`flex-1 text-sm ${task.status === 'done' ? 'text-charcoal-400 line-through' : 'text-charcoal-700'}`}>{task.title}</p>
+                      {isDuplicate && (
+                        <span className="badge text-xs bg-red-50 text-red-600 flex items-center gap-1">
+                          <Copy className="w-3 h-3" /> Possível duplicata
+                        </span>
+                      )}
+                      <span className={`badge text-xs ${taskStatusColor(task.status)}`}>{taskStatusLabel(task.status)}</span>
+                      <button
+                        onClick={() => handleDelete(task.id)}
+                        disabled={deletingId === task.id}
+                        className="text-charcoal-300 hover:text-red-500 disabled:opacity-40 transition-colors flex-shrink-0"
+                        title="Apagar tarefa"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             ) : (
               <p className="text-sm text-charcoal-400 text-center py-4">Nenhuma tarefa ainda</p>
