@@ -10,9 +10,7 @@ export function createClient() {
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll().map(({ name, value }) => {
-            try { return { name, value: decodeURIComponent(value) } } catch { return { name, value } }
-          })
+          return cookieStore.getAll()
         },
         setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           try {
