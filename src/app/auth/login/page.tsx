@@ -47,7 +47,7 @@ export default function LoginPage() {
       } else {
         const step = profile?.onboarding_step
         if (step && step !== 'completed') {
-          router.push(`/coachee/onboarding/${step}`)
+          router.push('/coachee/onboarding')
         } else {
           router.push('/coachee/dashboard')
         }

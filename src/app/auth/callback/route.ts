@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
 
   const step = profile?.onboarding_step
   if (step && step !== 'completed') {
-    return NextResponse.redirect(new URL(`/coachee/onboarding/${step}`, request.url))
+    return NextResponse.redirect(new URL('/coachee/onboarding', request.url))
   }
 
   return NextResponse.redirect(new URL('/coachee/dashboard', request.url))
