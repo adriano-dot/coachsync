@@ -2,33 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { formatDateShort, taskStatusColor, taskStatusLabel } from '@/lib/utils'
 import { CheckSquare, CalendarDays, MessageCircle, TrendingUp, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
-import { cookies, headers } from 'next/headers'
 
 export default async function CoaciheeDashboardPage() {
-  const rawCookies = cookies().getAll()
-  console.log('[DIAG2] raw cookies() names:', rawCookies.map(c => c.name).join(',') || '(none)')
-  console.log('[DIAG2] header cookie present:', headers().get('cookie') ? 'yes len=' + headers().get('cookie')!.length : 'no')
-  const authCookie = rawCookies.find(c => c.name.includes('auth-token'))
-  if (authCookie) {
-    console.log('[DIAG3] raw value first30:', authCookie.value.slice(0, 30))
-    try {
-      const decoded = decodeURIComponent(authCookie.value)
-      JSON.parse(decoded)
-      console.log('[DIAG3] decodeURIComponent -> valid JSON, first30:', decoded.slice(0, 30))
-    } catch (e: any) {
-      console.log('[DIAG3] decodeURIComponent -> INVALID JSON:', e.message)
-    }
-    try {
-      JSON.parse(authCookie.value)
-      console.log('[DIAG3] raw value is ALREADY valid JSON as-is')
-    } catch (e: any) {
-      console.log('[DIAG3] raw value as-is -> INVALID JSON:', e.message)
-    }
-  }
-
   const supabase = createClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
-  console.log('[DIAG] getUser result:', user ? `user=${user.id}` : 'null', 'error:', error?.message ?? 'none')
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
   const [
