@@ -2,8 +2,13 @@ import { createClient } from '@/lib/supabase/server'
 import { formatDateShort, taskStatusColor, taskStatusLabel } from '@/lib/utils'
 import { CheckSquare, CalendarDays, MessageCircle, TrendingUp, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { cookies, headers } from 'next/headers'
 
 export default async function CoaciheeDashboardPage() {
+  const rawCookies = cookies().getAll()
+  console.log('[DIAG2] raw cookies() names:', rawCookies.map(c => c.name).join(',') || '(none)')
+  console.log('[DIAG2] header cookie present:', headers().get('cookie') ? 'yes len=' + headers().get('cookie')!.length : 'no')
+
   const supabase = createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
   console.log('[DIAG] getUser result:', user ? `user=${user.id}` : 'null', 'error:', error?.message ?? 'none')
