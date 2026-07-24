@@ -5,7 +5,8 @@ import Link from 'next/link'
 
 export default async function CoaciheeDashboardPage() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error } = await supabase.auth.getUser()
+  console.log('[DIAG] getUser result:', user ? `user=${user.id}` : 'null', 'error:', error?.message ?? 'none')
   if (!user) return null
 
   const [
