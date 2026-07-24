@@ -68,12 +68,13 @@ export async function POST(req: NextRequest) {
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-5',
-      max_tokens: 500,
+      max_tokens: 1024,
       system: systemPrompt,
       messages,
     })
 
-    const reply = response.content[0].type === 'text' ? response.content[0].text : ''
+    const textBlock = response.content.find(b => b.type === 'text')
+    const reply = textBlock?.text ?? ''
 
     // Save messages to DB
     await supabaseAdmin.from('chat_messages').insert([

@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     // Generate summary with Claude
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-5',
-      max_tokens: 2000,
+      max_tokens: 3000,
       messages: [
         {
           role: 'user',
@@ -56,8 +56,8 @@ export async function POST(req: NextRequest) {
       ],
     })
 
-    const content = message.content[0]
-    if (content.type !== 'text') {
+    const content = message.content.find(b => b.type === 'text')
+    if (!content) {
       return NextResponse.json({ error: 'Resposta inesperada da IA' }, { status: 500 })
     }
 
